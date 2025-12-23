@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ayam Keju App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-yellow: #FFD700;
+            --dark-yellow: #FBC02D;
+            --cheese-orange: #FFA000;
+            --dark-text: #333;
+            --white: #ffffff;
+            --gray-bg: #f4f4f4;
+            --bca-blue: #0066AE;
+            --mandiri-blue: #003D79;
+            --shopee-orange: #EE4D2D;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--gray-bg); color: var(--dark-text); overflow-x: hidden; touch-action: pan-y; }
+
+        /* UI Helpers */
+        .btn-yellow { background: var(--primary-yellow); padding: 12px; border-radius: 12px; font-weight: bold; text-align: center; border: none; width: 100%; cursor: pointer; display: block; text-decoration: none; color: inherit; }
+        .card { background: white; padding: 15px; border-radius: 15px; margin: 10px 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+        /* Login */
+        #login-page { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: linear-gradient(135deg, var(--primary-yellow), var(--cheese-orange)); padding: 20px; }
+        .login-card { background: var(--white); padding: 30px; border-radius: 20px; width: 100%; max-width: 350px; text-align: center; }
+
+        /* Main App */
+        #main-app { display: none; padding-bottom: 100px; }
+        .header-bar { background: var(--primary-yellow); padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+
+        /* Slider & Dots */
+        .slider-container { width: 100%; overflow: hidden; position: relative; background: #fff; padding: 10px 0; }
+        .slider-track { display: flex; transition: transform 0.5s ease; cursor: grab; }
+        .slide { min-width: 100%; padding: 0 15px; }
+        .slide-content { height: 140px; border-radius: 15px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem; }
+        .dots-container { display: flex; justify-content: center; gap: 8px; margin-top: 10px; }
+        .dot { width: 10px; height: 10px; background: #ccc; border-radius: 50%; }
+        .dot.active { background: var(--cheese-orange); width: 12px; height: 12px; }
+
+        /* Menu Grid */
+        .menu-container { height: 55vh; overflow-y: auto; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px; }
+        .menu-item { background: white; border-radius: 15px; padding: 12px; text-align: center; border: 1px solid #eee; display: flex; flex-direction: column; justify-content: space-between; }
+        .price { color: var(--cheese-orange); font-weight: bold; font-size: 0.9rem; }
+        .counter-btn { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 5px; }
+        .btn-qty { background: var(--primary-yellow); border: none; width: 28px; height: 28px; border-radius: 50%; font-weight: bold; }
+
+        /* Overlays */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: center; }
+        .popup-box { background: white; padding: 20px; border-radius: 20px; text-align: center; width: 85%; max-width: 400px; }
+        .popup-box input { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; margin: 10px 0; }
+
+        /* Nav Bottom */
+        .nav-bottom { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
+        .nav-item { text-align: center; font-size: 10px; color: #888; flex: 1; cursor: pointer; }
+        .nav-item.active { color: var(--cheese-orange); }
+        .nav-item i { font-size: 20px; display: block; }
+
+        .page { display: none; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="popup-overlay" class="overlay">
+        <div class="popup-box"><p id="popup-message"></p><button class="btn-yellow" onclick="closePopup()" style="margin-top:10px">Oke</button></div>
+    </div>
+
+    <div id="edit-nama-overlay" class="overlay">
+        <div class="popup-box">
+            <h3>Edit Nama</h3>
+            <input type="text" id="new-name-input" placeholder="Masukkan nama baru">
+            <button class="btn-yellow" onclick="saveNewName()">Simpan</button>
+            <button class="btn-yellow" onclick="closeOverlay('edit-nama-overlay')" style="background:#eee; margin-top:5px">Batal</button>
+        </div>
+    </div>
+
+    <div id="edit-pass-overlay" class="overlay">
+        <div class="popup-box">
+            <h3>Ganti Password</h3>
+            <input type="password" id="new-pass-input" placeholder="Masukkan password baru">
+            <button class="btn-yellow" onclick="saveNewPass()">Simpan</button>
+            <button class="btn-yellow" onclick="closeOverlay('edit-pass-overlay')" style="background:#eee; margin-top:5px">Batal</button>
+        </div>
+    </div>
+
+    <div id="address-overlay" class="overlay">
+        <div class="popup-box">
+            <h3>Alamat Pengiriman</h3>
+            <input type="text" id="user-address" placeholder="Masukkan alamat lengkap">
+            <button class="btn-yellow" onclick="saveAddress()">Konfirmasi</button>
+        </div>
+    </div>
+
+    <div id="login-page">
+        <div class="login-card">
+            <h1 style="color: var(--cheese-orange);">Ayam Keju</h1>
+            <div style="text-align:left; margin-bottom:15px"><label>Username</label><input type="text" id="username" placeholder="inyong" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px"></div>
+            <div style="text-align:left; margin-bottom:15px"><label>Password</label><input type="password" id="password" placeholder="123" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px"></div>
+            <button class="btn-yellow" onclick="handleLogin()">MASUK</button>
+        </div>
+    </div>
+
+    <div id="main-app">
+        <div class="header-bar">
+            <div style="font-weight:700">Halo, <span id="display-user">inyong</span>!</div>
+            <div style="display:flex; align-items:center; gap:12px">
+                <div style="background:white; padding:4px 10px; border-radius:20px; font-size:12px; font-weight:bold" onclick="switchPage('rewards')">
+                    <i class="fas fa-coins" style="color:#FFD700"></i> <span id="current-poin-val">2450</span>
+                </div>
+                <i class="fas fa-envelope"></i>
+            </div>
+        </div>
+
+        <div id="beranda" class="page active">
+            <div class="slider-container">
+                <div class="slider-track" id="track">
+                    <div class="slide"><div class="slide-content" style="background:#e67e22">PROMO NEW YEAR</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#c0392b">DISKON 50% COMBO</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#2980b9">FREE DELIVERY</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#27ae60">CASHBACK SHOPEEPAY</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#8e44ad">PAKET MABAR MURAH</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#f39c12">BUY 2 GET 1 FREE</div></div>
+                    <div class="slide"><div class="slide-content" style="background:#2c3e50">MEMBER SPECIAL</div></div>
+                </div>
+                <div class="dots-container" id="dots-container"></div>
+            </div>
+
+            <div style="background:var(--primary-yellow); padding:15px; display:flex; justify-content:space-around; margin:10px 0">
+                <div class="nav-item" style="color:#000" onclick="showMenu('Dine In')"><i class="fas fa-utensils"></i>Dine In</div>
+                <div class="nav-item" style="color:#000" onclick="showMenu('Take Away')"><i class="fas fa-briefcase"></i>Take Away</div>
+                <div class="nav-item" style="color:#000" onclick="handleDeliveryClick()"><i class="fas fa-motorcycle"></i>Delivery</div>
+            </div>
+
+            <div style="display:flex; gap:10px; padding:0 15px">
+                <div class="btn-yellow" style="flex:1" onclick="showUltah()">Birthday Party</div>
+                <div class="btn-yellow" style="flex:1" onclick="window.location.href='https://wa.me/6283878980019'">Big Order</div>
+            </div>
+
+            <div class="card"><strong>Outlet:</strong> <select style="width:100%; border:none"><option>Bekasi Timur</option><option>Jakarta Selatan</option></select></div>
+        </div>
+
+        <div id="rewards" class="page">
+            <h3 style="padding:15px">Penukaran Poin</h3>
+            <div class="card" style="background:var(--primary-yellow); text-align:center">
+                <p>Poin Anda saat ini:</p>
+                <h2 id="poin-display">2450</h2>
+            </div>
+            <div id="voucher-list">
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center">
+                    <div><strong>Voucher Diskon 10rb</strong><p><small>500 Poin</small></p></div>
+                    <button class="btn-qty" style="width:auto; padding:5px 15px; border-radius:8px" onclick="tukarPoin(500, 'Voucher Diskon 10rb')">Tukar</button>
+                </div>
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center">
+                    <div><strong>Gratis Es Teh Manis</strong><p><small>800 Poin</small></p></div>
+                    <button class="btn-qty" style="width:auto; padding:5px 15px; border-radius:8px" onclick="tukarPoin(800, 'Gratis Es Teh Manis')">Tukar</button>
+                </div>
+                <div class="card" style="display:flex; justify-content:space-between; align-items:center">
+                    <div><strong>Voucher Diskon 50rb</strong><p><small>2000 Poin</small></p></div>
+                    <button class="btn-qty" style="width:auto; padding:5px 15px; border-radius:8px" onclick="tukarPoin(2000, 'Voucher Diskon 50rb')">Tukar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="profil" class="page">
+            <div class="card" style="text-align:center">
+                <h3 id="profile-name-display">inyong</h3>
+                <p style="font-size:12px; color:#888">Member Platinum</p>
+                <hr style="margin:15px 0; border:0; border-top:1px solid #eee">
+                
+                <div class="btn-yellow" style="background:#f9f9f9; margin-bottom:8px; text-align:left" onclick="openOverlay('edit-nama-overlay')">
+                    <i class="fas fa-edit"></i> Edit Profil
+                </div>
+                <div class="btn-yellow" style="background:#f9f9f9; margin-bottom:8px; text-align:left" onclick="openOverlay('edit-pass-overlay')">
+                    <i class="fas fa-lock"></i> Ganti Password
+                </div>
+                <a href="https://wa.me/6281219253608" class="btn-yellow" style="background:#f9f9f9; margin-bottom:8px; text-align:left">
+                    <i class="fab fa-whatsapp"></i> Hubungi Kami
+                </a>
+                <a href="https://instagram.com/nfl.hsym" class="btn-yellow" style="background:#f9f9f9; margin-bottom:20px; text-align:left">
+                    <i class="fab fa-instagram"></i> Ikuti Kami
+                </a>
+
+                <div class="card" style="margin:0; box-shadow:none; border:1px solid #ddd">
+                    <i class="fas fa-qrcode" style="font-size:80px"></i>
+                    <p><small>QR Member</small></p>
+                </div>
+                
+                <button class="btn-yellow" style="background:#ff4444; color:white; margin-top:20px" onclick="location.reload()">KELUAR</button>
+            </div>
+        </div>
+
+        <div id="menu-page" class="page">
+            <div style="padding:15px"><i class="fas fa-arrow-left" onclick="switchPage('beranda')"></i> <span id="menu-title-text" style="font-weight:bold; margin-left:10px"></span></div>
+            <div class="menu-container"><div class="menu-grid" id="menu-list"></div></div>
+            <div style="padding:15px"><button class="btn-yellow" style="background:var(--cheese-orange); color:white" onclick="goToPayment()">PESAN SEKARANG</button></div>
+        </div>
+
+        <div id="order" class="page"><h3 style="padding:15px">Rincian Pemesanan</h3><div id="order-history-container" class="card">Belum ada pesanan.</div></div>
+        <div id="cuppons" class="page"><h3 style="padding:15px">Kuponku</h3><div id="coupon-display-list" class="card">Anda belum memiliki kupon.</div></div>
+        <div id="ultah-page" class="page"><div style="padding:15px"><i class="fas fa-arrow-left" onclick="switchPage('beranda')"></i></div><div class="card" style="text-align:center; border: 2px dashed orange"><h3>Birthday Party</h3><p>Start from Rp 500rb / 20 pax</p></div><div class="btn-yellow" style="margin:10px 15px; width:auto">Rayakan bersama Ayam Keju</div><div class="btn-yellow" onclick="window.location.href='https://wa.me/6288293114031'" style="margin:10px 15px; width:auto; background:#25D366; color:white">088293114031</div></div>
+        <div id="payment-page" class="page"><div style="padding:15px"><i class="fas fa-arrow-left" onclick="switchPage('menu-page')"></i></div><div style="padding:15px"><div class="payment-option bca" onclick="processFinalOrder('BCA')">BANK BCA</div><div class="payment-option mandiri" onclick="processFinalOrder('Mandiri')">BANK MANDIRI</div><div class="payment-option shopee" onclick="processFinalOrder('ShopeePay')">SHOPEEPAY</div></div></div>
+
+        <div class="nav-bottom">
+            <div class="nav-item active" onclick="switchPage('beranda')"><i class="fas fa-home"></i>Beranda</div>
+            <div class="nav-item" onclick="switchPage('order')"><i class="fas fa-receipt"></i>Order</div>
+            <div class="nav-item" onclick="switchPage('rewards')"><i class="fas fa-gift"></i>Rewards</div>
+            <div class="nav-item" onclick="switchPage('cuppons')"><i class="fas fa-ticket-alt"></i>Cupons</div>
+            <div class="nav-item" onclick="switchPage('profil')"><i class="fas fa-user"></i>Profil</div>
+        </div>
+    </div>
+
+    <script>
+        const menus = [
+            { id: 1, name: "Paket Ayam Utuh", price: 85000, icon: "🍗" },
+            { id: 2, name: "Combo Mabar Fire Chicken", price: 125000, icon: "🔥" },
+            { id: 3, name: "Fire Chicken Whole Buy 2 Get 1", price: 170000, icon: "🎁" },
+            { id: 4, name: "Mabar Crispy Buy 2 Get 1", price: 150000, icon: "🍗" },
+            { id: 5, name: "Combo Fire Diavola Buy 3 Get 1", price: 110000, icon: "😈" },
+            { id: 6, name: "Combo 2 Fire Chicken Buy 3 Get 1", price: 135000, icon: "🔥" },
+            { id: 7, name: "Combo Fire Diavola Chicken", price: 45000, icon: "🌶️" },
+            { id: 8, name: "Fire Diavola Chicken", price: 35000, icon: "🔥" },
+            { id: 9, name: "Combo Twice", price: 55000, icon: "✌️" },
+            { id: 10, name: "Snack Box", price: 25000, icon: "🍟" },
+            { id: 11, name: "Combo 1 Richicken", price: 32000, icon: "🍗" },
+            { id: 12, name: "Combo 2 Richicken", price: 48000, icon: "🍗" },
+            { id: 13, name: "Combo Mabar Crispy Chicken", price: 115000, icon: "🧺" },
+            { id: 14, name: "Combo Fire Chicken Whole", price: 95000, icon: "🔥" },
+            { id: 15, name: "Combo Fire Drum Stick", price: 42000, icon: "🍗" }
+        ];
+
+        let cart = {};
+        let userPoin = 2450;
+        let validUser = { name: "inyong", pass: "123" };
+        let currentMethod = "";
+        let currentAddress = "";
+
+        // AUTH
+        function handleLogin() {
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if(u === validUser.name && p === validUser.pass) {
+                document.getElementById('login-page').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                renderMenus();
+                initSlider();
+            } else { showPopup("username/password yang anda masukan salah silahkan coba lagi"); }
+        }
+
+        // PROFIL FEATURES
+        function openOverlay(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeOverlay(id) { document.getElementById(id).style.display = 'none'; }
+
+        function saveNewName() {
+            const val = document.getElementById('new-name-input').value;
+            if(!val) return;
+            validUser.name = val;
+            document.getElementById('display-user').innerText = val;
+            document.getElementById('profile-name-display').innerText = val;
+            closeOverlay('edit-nama-overlay');
+            showPopup("Nama berhasil diperbarui!");
+        }
+
+        function saveNewPass() {
+            const val = document.getElementById('new-pass-input').value;
+            if(!val) return;
+            validUser.pass = val;
+            closeOverlay('edit-pass-overlay');
+            showPopup("Password berhasil diganti!");
+        }
+
+        // POIN / REWARDS
+        function tukarPoin(cost, name) {
+            if(userPoin >= cost) {
+                userPoin -= cost;
+                document.getElementById('poin-display').innerText = userPoin;
+                document.getElementById('current-poin-val').innerText = userPoin;
+                document.getElementById('coupon-display-list').innerHTML += `<div class="card" style="margin:5px 0; border-left:4px solid green">${name}</div>`;
+                showPopup("Berhasil menukar poin dengan " + name);
+            } else {
+                showPopup("Poin tidak cukup!");
+            }
+        }
+
+        // SLIDER
+        function initSlider() {
+            const track = document.getElementById('track');
+            const dotsCont = document.getElementById('dots-container');
+            let idx = 0;
+            dotsCont.innerHTML = "";
+            for(let i=0; i<7; i++) {
+                let d = document.createElement('div');
+                d.className = 'dot' + (i===0?' active':'');
+                dotsCont.appendChild(d);
+            }
+            setInterval(() => {
+                idx = (idx + 1) % 7;
+                track.style.transform = `translateX(-${idx * 100}%)`;
+                document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+            }, 4000);
+            
+            // Simple swipe
+            let startX;
+            track.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+            track.addEventListener('touchend', e => {
+                let diff = startX - e.changedTouches[0].clientX;
+                if(Math.abs(diff) > 50) {
+                    idx = diff > 0 ? (idx+1)%7 : (idx-1+7)%7;
+                    track.style.transform = `translateX(-${idx * 100}%)`;
+                    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+                }
+            });
+        }
+
+        // MENU & ORDER LOGIC
+        function renderMenus() {
+            const list = document.getElementById('menu-list');
+            list.innerHTML = menus.map(m => {
+                cart[m.id] = 0;
+                return `<div class="menu-item">
+                    <div><div style="font-size:30px">${m.icon}</div><strong>${m.name}</strong><br><span class="price">Rp ${m.price.toLocaleString()}</span></div>
+                    <div class="counter-btn"><button class="btn-qty" onclick="updQty(${m.id},-1)">-</button><span id="q-${m.id}">0</span><button class="btn-qty" onclick="updQty(${m.id},1)">+</button></div>
+                </div>`;
+            }).join('');
+        }
+        function updQty(id, d) { cart[id] = Math.max(0, cart[id]+d); document.getElementById('q-'+id).innerText = cart[id]; }
+        
+        function switchPage(id) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.innerText.toLowerCase().includes(id)));
+        }
+
+        function showMenu(t) { currentMethod = t; document.getElementById('menu-title-text').innerText = "Menu " + t; switchPage('menu-page'); }
+        function handleDeliveryClick() { currentMethod = "Delivery"; openOverlay('address-overlay'); }
+        function saveAddress() { currentAddress = document.getElementById('user-address').value; closeOverlay('address-overlay'); showMenu('Delivery'); }
+        function showUltah() { switchPage('ultah-page'); }
+        function goToPayment() { if(Object.values(cart).some(v => v > 0)) switchPage('payment-page'); else alert("Pilih menu!"); }
+
+        function processFinalOrder(bank) {
+            let total = 0;
+            let items = "";
+            menus.forEach(m => { if(cart[m.id]>0) { total += m.price*cart[m.id]; items += `<p>${cart[m.id]}x ${m.name}</p>`; }});
+            document.getElementById('order-history-container').innerHTML = `<div style="border-top:5px solid orange; padding-top:10px">
+                <p><strong>Status: Berhasil</strong></p>
+                <p>Metode: ${currentMethod}</p>
+                ${currentAddress ? `<p>Alamat: ${currentAddress}</p>` : ''}
+                <hr>${items}<hr>
+                <p>Pembayaran: ${bank}</p>
+                <p><strong>Total: Rp ${total.toLocaleString()}</strong></p>
+            </div>`;
+            showPopup("Pesanan Berhasil via " + bank);
+            menus.forEach(m => { cart[m.id]=0; document.getElementById('q-'+m.id).innerText=0; });
+            switchPage('order');
+        }
+
+        function showPopup(m) { document.getElementById('popup-message').innerText = m; document.getElementById('popup-overlay').style.display = 'flex'; }
+        function closePopup() { document.getElementById('popup-overlay').style.display = 'none'; }
+    </script>
+</body>
+</html>
